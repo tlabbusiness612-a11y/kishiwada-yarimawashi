@@ -1,0 +1,4 @@
+.claude/
+tools/wide.json
+*.zip
+.artifact/

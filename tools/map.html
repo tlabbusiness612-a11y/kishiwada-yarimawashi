@@ -1,0 +1,38 @@
+<title>PLATEAU 地図ビューア</title>
+<style>
+  body { margin: 0; background: #111; color: #eee; font: 12px system-ui, sans-serif; }
+  #c { display: block; }
+  #info { position: fixed; left: 8px; top: 8px; background: rgba(0,0,0,.7); padding: 6px 8px; white-space: pre; }
+</style>
+<canvas id="c"></canvas>
+<div id="info">読み込み中…</div>
+<script>
+// コース編集用：?src=../data/kishiwada.json&s=0.6&cx=0&cz=0  ドラッグで移動・ホイールで拡大・クリックで座標をログ
+const q = new URLSearchParams(location.search);
+const cv = document.getElementById('c'), g = cv.getContext('2d'), info = document.getElementById('info');
+let S = +(q.get('s') || 0.6), CX = +(q.get('cx') || 0), CZ = +(q.get('cz') || 0), data = null, marks = [];
+function size() { cv.width = innerWidth; cv.height = innerHeight; draw(); }
+const X = (x) => (x - CX) * S + cv.width / 2, Z = (z) => (z - CZ) * S + cv.height / 2;
+function poly(p) { g.beginPath(); for (let i = 0; i < p.length; i += 2) (i ? g.lineTo : g.moveTo).call(g, X(p[i]), Z(p[i + 1])); g.closePath(); }
+function draw() {
+  if (!data) return;
+  g.fillStyle = '#1b1b1b'; g.fillRect(0, 0, cv.width, cv.height);
+  for (const r of data.roads) { poly(r.p); g.fillStyle = r.f === '3' ? '#b8742f' : r.f === '1' ? '#a33' : '#555'; g.fill(); }
+  for (const b of data.buildings) { poly(b.p); const k = Math.min(1, b.h / 30); g.fillStyle = `rgb(${90 + k * 160},${110 + k * 120},${140 + k * 90})`; g.fill(); }
+  g.strokeStyle = '#0f0'; g.beginPath(); g.moveTo(X(-20), Z(0)); g.lineTo(X(20), Z(0)); g.moveTo(X(0), Z(-20)); g.lineTo(X(0), Z(20)); g.stroke();
+  g.fillStyle = '#ff0'; for (const m of marks) { g.beginPath(); g.arc(X(m[0]), Z(m[1]), 4, 0, 7); g.fill(); }
+  if (window.COURSE) { g.strokeStyle = '#f0f'; g.lineWidth = 3; g.beginPath(); COURSE.forEach((p, i) => (i ? g.lineTo : g.moveTo).call(g, X(p[0]), Z(p[1]))); g.stroke(); g.lineWidth = 1; }
+}
+let drag = null;
+cv.onmousedown = (e) => { drag = [e.clientX, e.clientY, CX, CZ, false]; };
+cv.onmousemove = (e) => {
+  const x = (e.clientX - cv.width / 2) / S + CX, z = (e.clientY - cv.height / 2) / S + CZ;
+  info.textContent = `x=${x.toFixed(1)} z=${z.toFixed(1)}  scale=${S.toFixed(2)}\n建物 ${data ? data.buildings.length : 0}・道路 ${data ? data.roads.length : 0}`;
+  if (drag) { drag[4] = true; CX = drag[2] - (e.clientX - drag[0]) / S; CZ = drag[3] - (e.clientY - drag[1]) / S; draw(); }
+};
+cv.onmouseup = (e) => { if (drag && !drag[4]) { const x = (e.clientX - cv.width / 2) / S + CX, z = (e.clientY - cv.height / 2) / S + CZ; marks.push([+x.toFixed(1), +z.toFixed(1)]); console.log(JSON.stringify(marks)); draw(); } drag = null; };
+cv.onwheel = (e) => { S *= e.deltaY < 0 ? 1.2 : 1 / 1.2; draw(); e.preventDefault(); };
+addEventListener('resize', size);
+fetch(q.get('src') || '../data/kishiwada.json').then((r) => r.json()).then((j) => { data = j; size(); });
+window.view = (cx, cz, s) => { CX = cx; CZ = cz; S = s; draw(); };
+</script>

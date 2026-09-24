@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="やりまわし">
+<meta name="theme-color" content="#0e1322">
+<meta name="description" content="岸和田だんじり祭の「やりまわし」を iPhone で遊べる 3D ゲーム。PLATEAU の建物データで再現したカンカン場から北町の路地、紀州街道へ。">
+<title>岸和田やりまわし</title><link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Yuji+Syuku&family=Zen+Kaku+Gothic+New:wght@500;700&display=swap">
+<style>
+  :root {
+    color-scheme: dark;
+    --ai: #121a2c; --ai-soft: rgba(18, 26, 44, .72);
+    --shu: #d8432b; --kin: #e0ad4a; --kinari: #f3ead8; --keyaki: #8a5a34; --muted: #b9b0a0;
+    --display: "Dela Gothic One", "Hiragino Sans", "Yu Gothic", sans-serif;
+    --body: "Zen Kaku Gothic New", "Hiragino Sans", "Yu Gothic", sans-serif;
+    --brush: "Yuji Syuku", "Hiragino Mincho ProN", "Yu Mincho", serif;
+  }
+  [hidden] { display: none !important; }
+  html, body { height: 100%; }
+  body { margin: 0; background: #0e1322; color: var(--kinari); font-family: var(--body); overflow: hidden; overscroll-behavior: none;
+    -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
+  #app { position: fixed; inset: 0; touch-action: none; }
+  #c { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  button { font-family: var(--body); color: inherit; cursor: pointer; }
+  button:focus-visible { outline: 3px solid var(--kin); outline-offset: 3px; }
+  input { -webkit-user-select: text; user-select: text; }
+
+  /* ---------- HUD ---------- */
+  #hud { position: absolute; inset: 0; pointer-events: none; }
+  .top { position: absolute; left: 0; right: 0; top: 0; z-index: 3; display: flex; gap: 12px; align-items: flex-start;
+    padding: calc(env(safe-area-inset-top, 0px) + 10px) calc(env(safe-area-inset-right, 0px) + 14px) 0 calc(env(safe-area-inset-left, 0px) + 14px); }
+  .team { background: var(--ai-soft); border-left: 4px solid var(--shu); padding: 6px 12px 7px; min-width: 0; }
+  .team b { font-family: var(--display); font-weight: 400; font-size: 18px; letter-spacing: .06em; display: block; line-height: 1.2; }
+  .team small { font-size: 11px; color: var(--muted); letter-spacing: .08em; }
+  .course { flex: 1; min-width: 0; padding-top: 6px; }
+  .rail { position: relative; height: 6px; background: rgba(243, 234, 216, .22); border-radius: 3px; }
+  .rail i { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: var(--kinari); border-radius: 3px; }
+  .rail .stop { position: absolute; top: -3px; width: 12px; height: 12px; margin-left: -6px; border-radius: 50%; background: var(--ai); border: 2px solid var(--kin); }
+  .rail .stop span { position: absolute; top: 15px; left: 50%; transform: translateX(-50%); white-space: nowrap; font-size: 10px; letter-spacing: .06em; text-shadow: 0 1px 2px #000; }
+  .rail .stop.done { background: var(--kin); }
+  .meter { background: var(--ai-soft); padding: 4px 12px 7px; text-align: right; min-width: 92px; }
+  .meter .spd { font-family: var(--display); font-size: 30px; line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .meter .spd small { font-family: var(--body); font-size: 11px; margin-left: 3px; color: var(--muted); }
+  .tempo { display: flex; align-items: center; gap: 6px; font-size: 10px; color: var(--muted); letter-spacing: .1em; }
+  .tempo div { flex: 1; height: 5px; background: rgba(243, 234, 216, .2); }
+  .tempo i { display: block; height: 100%; width: 0; background: var(--shu); }
+  .iconbtn { pointer-events: auto; background: var(--ai-soft); border: 1px solid rgba(243, 234, 216, .25); height: 40px; min-width: 44px; padding: 0 10px; font-size: 12px; font-weight: 700; letter-spacing: .06em; }
+  .score { position: absolute; z-index: 3; top: calc(env(safe-area-inset-top, 0px) + 62px); right: calc(env(safe-area-inset-right, 0px) + 14px); text-align: right; font-family: var(--display); color: var(--kin); font-size: 22px; text-shadow: 0 2px 4px rgba(0,0,0,.6); font-variant-numeric: tabular-nums; }
+  .score small { display: block; font-family: var(--body); font-size: 10px; color: var(--kinari); letter-spacing: .12em; }
+  #callout { position: absolute; z-index: 3; left: 50%; top: 24%; transform: translateX(-50%); text-align: center; font-family: var(--display); font-size: clamp(18px, 4.2vw, 30px); letter-spacing: .08em; text-shadow: 0 2px 0 #000, 0 0 18px rgba(0,0,0,.6); white-space: nowrap; transition: opacity .25s; }
+  #callout small { display: block; font-family: var(--body); font-weight: 700; font-size: 13px; letter-spacing: .1em; color: var(--kin); }
+  #stamp { position: absolute; z-index: 3; left: 50%; top: 44%; width: 150px; height: 150px; margin: -75px 0 0 -75px; border: 5px solid var(--shu); border-radius: 50%; color: var(--shu);
+    display: grid; place-items: center; text-align: center; font-family: var(--brush); font-size: 30px; line-height: 1.05; background: rgba(243, 234, 216, .9); transform: rotate(-12deg) scale(.3); opacity: 0; transition: transform .28s cubic-bezier(.2, 1.6, .4, 1), opacity .2s; }
+  #stamp.show { transform: rotate(-12deg) scale(1); opacity: 1; }
+  #stamp small { display: block; font-family: var(--display); font-size: 16px; color: var(--ai); margin-top: 4px; }
+  #bang { position: absolute; z-index: 3; left: 50%; top: 36%; transform: translate(-50%, -50%); font-family: var(--display); font-size: 48px; color: var(--kinari); -webkit-text-stroke: 2px var(--shu); opacity: 0; transition: opacity .15s; }
+  #bang.show { opacity: 1; }
+
+  /* 前梃子（左右の縦棒）— 押している間、その側の前輪を止めて曲がる */
+  .mae { pointer-events: auto; touch-action: none; position: absolute; z-index: 2; bottom: calc(env(safe-area-inset-bottom, 0px) + 14px); width: 76px; height: min(64vh, 320px);
+    border: 2px solid rgba(40, 22, 10, .8); border-radius: 38px; color: var(--kinari);
+    background: repeating-linear-gradient(90deg, rgba(60,30,12,.25) 0 2px, transparent 2px 9px), linear-gradient(90deg, #6f4526, #a8764a 45%, #7a4d2b);
+    box-shadow: 0 4px 0 rgba(0,0,0,.45), inset 0 0 0 3px rgba(255,220,170,.12);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 0; }
+  .mae b { writing-mode: vertical-rl; font-family: var(--display); font-weight: 400; font-size: 22px; letter-spacing: .2em; text-shadow: 0 2px 0 rgba(0,0,0,.5); }
+  .mae small { writing-mode: vertical-rl; font-size: 11px; font-weight: 700; letter-spacing: .12em; opacity: .85; }
+  .mae.on { transform: translateY(3px); box-shadow: 0 1px 0 rgba(0,0,0,.45), 0 0 0 4px var(--kin); filter: brightness(1.15); }
+  .mae.hint { animation: hint .5s ease-in-out infinite alternate; }
+  @keyframes hint { to { box-shadow: 0 4px 0 rgba(0,0,0,.45), 0 0 0 6px var(--shu); } }
+  #mL { left: calc(env(safe-area-inset-left, 0px) + 14px); }
+  #mR { right: calc(env(safe-area-inset-right, 0px) + 14px); }
+  #pullZone { pointer-events: auto; touch-action: none; position: absolute; z-index: 1; top: 70px; bottom: 0;
+    left: calc(env(safe-area-inset-left, 0px) + 100px); right: calc(env(safe-area-inset-right, 0px) + 100px); }
+  #pullRing { position: absolute; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 14px); width: 92px; height: 92px; margin-left: -46px; opacity: .9; border-radius: 50%;
+    background: var(--shu); color: var(--kinari); display: grid; place-items: center; text-align: center; font-family: var(--display); font-size: 28px; line-height: 1;
+    box-shadow: 0 4px 0 rgba(0,0,0,.4); pointer-events: none; }
+  #pullRing small { display: block; font-family: var(--body); font-size: 10px; font-weight: 700; letter-spacing: .1em; margin-top: 4px; }
+  #pullRing.pulse { animation: pulse .18s ease-out; }
+  @keyframes pulse { 50% { transform: scale(.9); filter: brightness(1.2); } }
+  #btnJump { pointer-events: auto; touch-action: none; position: absolute; z-index: 2; left: calc(50% + 60px); bottom: calc(env(safe-area-inset-bottom, 0px) + 30px);
+    width: 60px; height: 60px; border-radius: 50%; border: none; background: var(--kin); color: var(--ai); font-family: var(--display); font-size: 20px; box-shadow: 0 4px 0 rgba(0,0,0,.4); }
+  #btnJump.on { transform: translateY(3px); box-shadow: 0 1px 0 rgba(0,0,0,.4); }
+
+  /* ---------- screens ---------- */
+  .screen { position: absolute; inset: 0; z-index: 5; display: grid; place-items: center; padding: 16px; overflow: auto;
+    background: radial-gradient(120% 90% at 70% 20%, rgba(216, 67, 43, .25), transparent 60%), rgba(14, 19, 34, .78); }
+  .card { width: min(700px, 100%); display: grid; grid-template-columns: auto 1fr; gap: 20px 28px; align-items: center; }
+  .vtitle { writing-mode: vertical-rl; font-family: var(--brush); font-size: clamp(44px, 11vh, 86px); line-height: 1; letter-spacing: .08em; text-shadow: 0 3px 0 var(--shu); }
+  .vtitle span { font-size: .5em; color: var(--kin); margin-top: .5em; text-shadow: none; }
+  .lead { font-size: 14px; line-height: 1.8; color: var(--muted); max-width: 42ch; margin: 0 0 14px; }
+  .lead b { color: var(--kinari); }
+  .field { display: grid; gap: 6px; margin-bottom: 14px; }
+  .field label { font-size: 11px; letter-spacing: .14em; color: var(--muted); }
+  .field input { font: 700 16px var(--body); color: var(--kinari); background: rgba(243, 234, 216, .08); border: 1px solid rgba(243, 234, 216, .3); padding: 8px 10px; width: 12em; max-width: 100%; }
+  .swatches { display: flex; gap: 10px; flex-wrap: wrap; }
+  .swatches button { width: 40px; height: 40px; border-radius: 50%; border: 3px solid transparent; }
+  .swatches button[aria-pressed="true"] { border-color: var(--kinari); }
+  .go { display: flex; gap: 10px; flex-wrap: wrap; }
+  .primary { font-family: var(--display); font-size: 20px; letter-spacing: .1em; padding: 12px 26px; background: var(--shu); border: none; color: var(--kinari); box-shadow: 0 4px 0 #7d2314; }
+  .ghost { font-weight: 700; font-size: 14px; padding: 12px 18px; background: transparent; border: 1px solid rgba(243, 234, 216, .4); }
+  .how { margin: 14px 0 0; padding: 0; list-style: none; display: grid; gap: 6px; font-size: 13px; line-height: 1.6; }
+  .how li { display: grid; grid-template-columns: 5.5em 1fr; gap: 8px; }
+  .how b { color: var(--kin); font-weight: 700; }
+  .note { font-size: 11px; color: var(--muted); margin-top: 12px; line-height: 1.6; }
+  .res-rows { display: grid; gap: 4px; margin: 6px 0 14px; font-size: 14px; }
+  .res-rows div { display: grid; grid-template-columns: 1fr auto auto; gap: 14px; padding: 6px 0; border-bottom: 1px solid rgba(243, 234, 216, .15); font-variant-numeric: tabular-nums; }
+  .res-rows em { font-style: normal; font-family: var(--brush); color: var(--shu); font-size: 17px; }
+  .total { font-family: var(--display); font-size: 40px; color: var(--kin); line-height: 1.1; }
+  .total small { font-family: var(--body); font-size: 12px; color: var(--muted); display: block; letter-spacing: .1em; }
+  #loading { position: absolute; inset: 0; z-index: 9; display: grid; place-items: center; text-align: center; padding: 16px; font-family: var(--brush); font-size: 26px; background: #0e1322; }
+  @media (max-height: 430px) {
+    .card { gap: 12px 22px; }
+    .lead { margin-bottom: 8px; font-size: 13px; line-height: 1.6; max-width: 54ch; }
+    .field { margin-bottom: 8px; }
+    .how { grid-template-columns: 1fr 1fr; gap: 4px 14px; font-size: 11px; line-height: 1.45; margin-top: 10px; }
+    .how li { grid-template-columns: 4.5em 1fr; gap: 6px; }
+    .note { margin-top: 6px; }
+  }
+  @media (max-width: 520px) {
+    .card { grid-template-columns: 1fr; }
+    .vtitle { writing-mode: horizontal-tb; font-size: 44px; }
+    .course .stop span { display: none; }
+    .mae { width: 62px; height: min(46vh, 300px); }
+    .mae b { font-size: 18px; }
+    #pullZone { left: 84px; right: 84px; }
+    #pullRing { width: 90px; height: 90px; margin-left: -45px; font-size: 24px; }
+    #btnJump { left: auto; right: calc(env(safe-area-inset-right, 0px) + 90px); bottom: calc(env(safe-area-inset-bottom, 0px) + 130px); }
+  }
+  @media (prefers-reduced-motion: reduce) { #stamp { transition: opacity .2s; } .mae.hint { animation: none; box-shadow: 0 0 0 5px var(--shu); } }
+</style>
+</head>
+<body>
+<div id="app">
+  <canvas id="c"></canvas>
+
+  <div id="hud" hidden>
+    <div class="top">
+      <div class="team"><b id="teamName">わが町</b><small id="place">大阪臨海線</small></div>
+      <div class="course"><div class="rail" id="rail"><i id="railFill"></i></div></div>
+      <div class="meter">
+        <div class="spd"><span id="spd">0</span><small>km/h</small></div>
+        <div class="tempo">鳴物<div><i id="tempoFill"></i></div></div>
+      </div>
+      <button class="iconbtn" id="camBtn" type="button">追走</button>
+    </div>
+    <div class="score"><small>点数</small><span id="score">0</span></div>
+    <div id="callout"></div>
+    <div id="bang">ドーン！</div>
+    <div id="stamp"></div>
+    <div id="pullZone" aria-label="曳け（連打）"><div id="pullRing">曳け<small>ここを連打</small></div></div>
+    <button class="mae" id="mL" type="button" aria-label="左の前梃子"><b>左前梃子</b><small>押すと左へ</small></button>
+    <button class="mae" id="mR" type="button" aria-label="右の前梃子"><b>右前梃子</b><small>押すと右へ</small></button>
+    <button id="btnJump" type="button" aria-label="大工方が跳ぶ">跳</button>
+  </div>
+
+  <section class="screen" id="title">
+    <div class="card">
+      <div class="vtitle">岸和田<span>やりまわし</span></div>
+      <div>
+        <p class="lead">大阪臨海線を南へ走り込み、<b>カンカン場（岸和田港交差点）</b>で左へやりまわし。北町の路地を抜けて、<b>紀州街道</b>の辻で右へ。町並みは国土交通省 PLATEAU の建物データから起こしています。</p>
+        <div class="field"><label for="townInput">町名</label><input id="townInput" maxlength="8" value="わが町" autocomplete="off"></div>
+        <div class="field"><label>法被の色</label><div class="swatches" id="swatches"></div></div>
+        <div class="go"><button class="primary" id="startBtn" type="button">曳き出し</button></div>
+        <ul class="how">
+          <li><b>曳け</b>画面の真ん中を鳴物の拍に合わせて連打。調子が合うほど速い</li>
+          <li><b>前梃子</b>左右の縦棒を押している間、その側の前輪が止まって曲がる（減速あり）</li>
+          <li><b>綱</b>綱先は道なりに走る。地車の向きを変えるのは前梃子</li>
+          <li><b>跳</b>やりまわしの最中に大工方が跳ぶと加点</li>
+        </ul>
+        <p class="note">横向き推奨。音が出ない時は消音スイッチを確認。PC は Space 曳け・← → 前梃子・J 跳・C 視点。<br>地図データ：国土交通省 Project PLATEAU「岸和田市（2024年度）」を加工して作成。</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="screen" id="result" hidden>
+    <div class="card">
+      <div class="vtitle" id="resGrade">見事</div>
+      <div>
+        <div class="total"><small>総合点</small><span id="resTotal">0</span></div>
+        <div class="res-rows" id="resRows"></div>
+        <div class="go">
+          <button class="primary" id="againBtn" type="button">もう一回</button>
+          <button class="ghost" id="titleBtn" type="button">町を変える</button>
+        </div>
+        <p class="note" id="resBest"></p>
+      </div>
+    </div>
+  </section>
+
+  <div id="loading">岸和田の町並みを組み立て中…</div>
+</div>
+
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+<script type="module" src="js/game.js"></script>
+</body>
+</html>
