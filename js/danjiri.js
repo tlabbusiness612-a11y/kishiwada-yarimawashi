@@ -128,56 +128,73 @@ export function buildDanjiri(tex, happi) {
   }
   b.box('wood', 2.36, 0.07, 0.08, 0, 1.71, 2.03, AGED); b.box('wood', 2.36, 0.07, 0.08, 0, 1.71, -2.03, AGED);
 
-  // 前の間：柱・虹梁・枡合・太鼓
-  for (const sx of [-1, 1]) for (const z of [0.62, 1.82]) b.box('wood', 0.15, 1.3, 0.15, sx * 0.82, 2.0, z, W);
-  b.box('wood', 1.8, 0.14, 0.16, 0, 2.3, 1.86, AGED);
-  b.box('carve', 1.78, 0.3, 0.1, 0, 2.52, 1.86, W);
-  b.box('carve', 0.1, 0.3, 1.3, -0.86, 2.52, 1.22, W); b.box('carve', 0.1, 0.3, 1.3, 0.86, 2.52, 1.22, W);
+  // 上屋（柱・枡合・屋根）は fb に積み、最後に 180° 回して「大屋根が前・小屋根が後ろ」の岸和田型の向きにする
+  const fb = new Batch();
+  // 小屋根の下の間（回したあと後ろ）：柱・虹梁・枡合。太鼓は前寄りに据える
+  for (const sx of [-1, 1]) for (const z of [0.62, 1.82]) fb.box('wood', 0.15, 1.3, 0.15, sx * 0.82, 2.0, z, W);
+  fb.box('wood', 1.8, 0.14, 0.16, 0, 2.3, 1.86, AGED);
+  fb.box('carve', 1.78, 0.3, 0.1, 0, 2.52, 1.86, W);
+  fb.box('carve', 0.1, 0.3, 1.3, -0.86, 2.52, 1.22, W); fb.box('carve', 0.1, 0.3, 1.3, 0.86, 2.52, 1.22, W);
   const drum = new THREE.CylinderGeometry(0.3, 0.3, 0.44, 24); drum.rotateX(Math.PI / 2);
   b.geo('plain', drum, 0, 1.78, 1.2, 0x7d2a17);
   b.geo('plain', new THREE.CircleGeometry(0.29, 24), 0, 1.78, 1.43, 0xe8dcc0);
   b.geo('plain', new THREE.CircleGeometry(0.29, 24), 0, 1.78, 0.97, 0xe8dcc0, Math.PI);
   for (let k = 0; k < 10; k++) { const a = k / 10 * Math.PI * 2; b.geo('gold', new THREE.SphereGeometry(0.018, 6, 4), Math.cos(a) * 0.3, 1.78 + Math.sin(a) * 0.3, 1.43, W); }
 
-  // 後ろの間：柱・枡合・見送り
-  for (const sx of [-1, 1]) for (const z of [-1.86, 0.56]) b.box('wood', 0.17, 1.78, 0.17, sx * 0.9, 2.24, z, W);
-  b.box('carve', 0.1, 0.34, 2.5, -0.95, 2.95, -0.65, W); b.box('carve', 0.1, 0.34, 2.5, 0.95, 2.95, -0.65, W);
-  b.box('carve', 1.9, 0.34, 0.1, 0, 2.95, 0.6, W); b.box('carve', 1.9, 0.34, 0.1, 0, 2.95, -1.9, W);
-  b.box('wood', 1.9, 0.12, 0.14, 0, 2.72, 0.6, AGED);
-  b.box('carve', 1.62, 1.28, 0.1, 0, 2.05, -1.88, W);
-  b.box('plain', 1.5, 1.1, 2.0, 0, 1.95, -0.75, 0x2b1d13);
-  b.box('carve', 0.28, 0.24, 2.7, -1.07, 3.02, -0.5, AGED); b.box('carve', 0.28, 0.24, 2.7, 1.07, 3.02, -0.5, AGED);
-  b.box('carve', 0.22, 0.2, 1.3, -0.93, 2.57, 1.32, AGED); b.box('carve', 0.22, 0.2, 1.3, 0.93, 2.57, 1.32, AGED);
+  // 大屋根の下の間（回したあと前）：柱・枡合・組物
+  for (const sx of [-1, 1]) for (const z of [-1.86, 0.56]) fb.box('wood', 0.17, 1.78, 0.17, sx * 0.9, 2.24, z, W);
+  fb.box('carve', 0.1, 0.34, 2.5, -0.95, 2.95, -0.65, W); fb.box('carve', 0.1, 0.34, 2.5, 0.95, 2.95, -0.65, W);
+  fb.box('carve', 1.9, 0.34, 0.1, 0, 2.95, 0.6, W); fb.box('carve', 1.9, 0.34, 0.1, 0, 2.95, -1.9, W);
+  fb.box('wood', 1.9, 0.12, 0.14, 0, 2.72, 0.6, AGED);
+  fb.box('carve', 0.28, 0.24, 2.7, -1.07, 3.02, -0.5, AGED); fb.box('carve', 0.28, 0.24, 2.7, 1.07, 3.02, -0.5, AGED);
+  fb.box('carve', 0.22, 0.2, 1.3, -0.93, 2.57, 1.32, AGED); fb.box('carve', 0.22, 0.2, 1.3, 0.93, 2.57, 1.32, AGED);
 
   // 屋根（上面・裏面・破風・軒先・垂木）
   const big = roofParts(2.95, 3.15, 3.98, 3.1, 0.36), bz = -0.52;
   const small = roofParts(2.35, 1.75, 3.1, 2.62, 0.24), sz = 1.36;
   for (const [R, zc, L, Wd, drop] of [[big, bz, 3.15, 2.95, 0.26], [small, sz, 1.75, 2.35, 0.2]]) {
-    b.geo('roof', R.top, 0, 0, zc, AGED); b.geo('roof', R.under, 0, 0, zc, 0xa89684);
-    for (const t of [0, 1]) b.geo('wood', R.ribbon('t', t, drop), 0, 0, zc, DARK);
-    for (const u of [-1, 1]) b.geo('wood', R.ribbon('u', u, 0.14), 0, 0, zc, DARK);
+    fb.geo('roof', R.top, 0, 0, zc, AGED); fb.geo('roof', R.under, 0, 0, zc, 0xa89684);
+    for (const t of [0, 1]) fb.geo('wood', R.ribbon('t', t, drop), 0, 0, zc, DARK);
+    for (const u of [-1, 1]) fb.geo('wood', R.ribbon('u', u, 0.14), 0, 0, zc, DARK);
     for (const u of [-1, 1]) for (let z = -L / 2 + 0.18; z < L / 2 - 0.1; z += 0.17) {
       const t = (z + L / 2) / L, y = R.hAt(u * 0.86, t) - 0.13;
-      b.box('wood', 0.42, 0.05, 0.05, u * (Wd / 2 - 0.3), y, zc + z, AGED, 0, 0, u * 0.35);
+      fb.box('wood', 0.42, 0.05, 0.05, u * (Wd / 2 - 0.3), y, zc + z, AGED, 0, 0, u * 0.35);
     }
   }
-  b.geo('carve', big.gable(), 0, 0, bz + 3.15 / 2 - 0.34, W);
-  b.geo('carve', big.gable(), 0, 0, bz - 3.15 / 2 + 0.34, W, Math.PI);
-  b.geo('carve', small.gable(), 0, 0, sz + 1.75 / 2 - 0.26, W);
-  b.box('wood', 0.22, 0.26, 3.1, 0, 4.09, bz, DARK); b.box('wood', 0.3, 0.06, 3.1, 0, 4.23, bz, DARK);
-  b.box('wood', 0.17, 0.2, 1.7, 0, 3.19, sz, DARK);
+  fb.geo('carve', big.gable(), 0, 0, bz + 3.15 / 2 - 0.34, W);
+  fb.geo('carve', big.gable(), 0, 0, bz - 3.15 / 2 + 0.34, W, Math.PI);
+  fb.geo('carve', small.gable(), 0, 0, sz + 1.75 / 2 - 0.26, W);
+  fb.box('wood', 0.22, 0.26, 3.1, 0, 4.09, bz, DARK); fb.box('wood', 0.3, 0.06, 3.1, 0, 4.23, bz, DARK);
+  fb.box('wood', 0.17, 0.2, 1.7, 0, 3.19, sz, DARK);
   // 鬼板（上に反る板）・懸魚・飾り金具
   const oni = new THREE.Shape(); oni.moveTo(-0.34, 0); oni.lineTo(0.34, 0); oni.quadraticCurveTo(0.44, 0.5, 0.3, 0.7); oni.quadraticCurveTo(0, 0.56, -0.3, 0.7); oni.quadraticCurveTo(-0.44, 0.5, -0.34, 0);
   const oniG = new THREE.ExtrudeGeometry(oni, { depth: 0.12, bevelEnabled: true, bevelSize: 0.02, bevelThickness: 0.02, bevelSegments: 1 });
   const uvs = oniG.attributes.uv; for (let i = 0; i < uvs.count; i++) uvs.setXY(i, uvs.getX(i) * 0.4 + 0.5, uvs.getY(i) * 0.6 + 0.1);
   for (const s of [-1, 1]) {
-    b.geo('carve', oniG, 0, 4.0, bz + s * 1.52 - 0.06, W);
-    b.box('carve', 0.3, 0.38, 0.06, 0, 3.55, bz + s * 1.58, W);
-    b.box('gold', 0.22, 0.12, 0.22, 0, 4.74, bz + s * 1.52, W);
-    for (const sx of [-1, 1]) b.box('gold', 0.14, 0.1, 0.2, sx * 1.46, 3.5, bz + s * 1.56, W);
+    fb.geo('carve', oniG, 0, 4.0, bz + s * 1.52 - 0.06, W);
+    fb.box('carve', 0.3, 0.38, 0.06, 0, 3.55, bz + s * 1.58, W);
+    fb.box('gold', 0.22, 0.12, 0.22, 0, 4.74, bz + s * 1.52, W);
+    for (const sx of [-1, 1]) fb.box('gold', 0.14, 0.1, 0.2, sx * 1.46, 3.5, bz + s * 1.56, W);
   }
-  b.geo('carve', oniG, 0, 3.12, sz + 0.8, W, 0, 0, 0, 0.7, 0.7, 0.7);
-  b.box('gold', 0.14, 0.1, 0.14, 0, 3.62, sz + 0.86, W);
+  fb.geo('carve', oniG, 0, 3.12, sz + 0.8, W, 0, 0, 0, 0.7, 0.7, 0.7);
+  fb.box('gold', 0.14, 0.1, 0.14, 0, 3.62, sz + 0.86, W);
+  const upper = fb.build(mats, { cast: true, receive: true });
+  upper.rotation.y = Math.PI; model.add(upper);
+
+  // 見送り（後ろの彫り物）と内部
+  b.box('carve', 1.6, 0.9, 0.1, 0, 1.88, -1.93, W);
+  b.box('plain', 1.3, 1.0, 1.4, 0, 1.92, -0.1, 0x2b1d13);
+  // 大屋根の前の両角に房
+  for (const sx of [-1, 1]) {
+    b.rod('plain', V(sx * 1.4, 3.05, 2.0), V(sx * 1.4, 3.42, 2.0), 0.012, 0xd8ac4c, 4);
+    b.geo('gold', new THREE.SphereGeometry(0.06, 10, 8), sx * 1.4, 3.05, 2.0, W);
+    b.geo('plain', new THREE.CylinderGeometry(0.05, 0.12, 0.44, 14), sx * 1.4, 2.8, 2.0, 0x7a1f3d);
+  }
+  // 後ろ旗の竿と横木
+  b.box('wood', 0.12, 0.12, 0.22, 0, 0.75, -2.25, DARK);
+  b.rod('wood', V(0, 0.7, -2.34), V(0, 5.35, -2.34), 0.045, DARK, 8);
+  b.rod('gold', V(-0.64, 5.22, -2.34), V(0.64, 5.22, -2.34), 0.025, W, 6);
+  b.geo('gold', new THREE.SphereGeometry(0.08, 10, 8), 0, 5.42, -2.34, W);
 
   // 綱の結び目・後梃子
   for (const sx of [-1, 1]) b.geo('plain', new THREE.TorusGeometry(0.1, 0.035, 8, 14), sx * 0.52, 0.56, 2.18, 0xd9c9a3);
@@ -186,7 +203,7 @@ export function buildDanjiri(tex, happi) {
   // 鳴物方
   person(b, -1.0, 1.4, 0.2, -Math.PI / 2, happi, 'sit');
   person(b, 1.0, 1.4, -0.4, Math.PI / 2, happi, 'sit');
-  person(b, 0, 1.4, 0.55, Math.PI, happi, 'sit');
+  person(b, 0, 1.4, 0.72, 0, happi, 'sit');
   const body = b.build(mats, { cast: true, receive: true });
   model.add(body);
 
@@ -195,6 +212,12 @@ export function buildDanjiri(tex, happi) {
   for (const sx of [-1, 1]) for (let k = 0; k < 3; k++) person(rear, sx * (0.62 + 0.5 * (k + 1) / 3 + 0.34), 0, -2.7 - k * 0.8, 0, happi, 'lean');
   const crewRear = rear.build(mats, { cast: true });
   model.add(crewRear);
+
+  // 前に乗る三人（責任者）：大屋根の下、前の高欄の内側に立つ
+  const front = new Batch();
+  for (const x of [-0.55, 0, 0.55]) person(front, x, 1.4, 1.93, 0, happi, 'hold');
+  const crewFront = front.build(mats, { cast: true });
+  model.add(crewFront);
 
   // 前梃子：左右に一本ずつ。押すと先が前輪に食い込む
   const maeteko = [];
@@ -222,22 +245,50 @@ export function buildDanjiri(tex, happi) {
     w.add(new THREE.Mesh(hub, mats.gold)); model.add(w); wheels.push(w);
   }
 
-  // 町名の札
-  const plate = document.createElement('canvas'); plate.width = 256; plate.height = 96;
+  // 町名の札（前の地覆）
+  const plate = document.createElement('canvas'); plate.width = 256; plate.height = 88;
   const plateTex = new THREE.CanvasTexture(plate); plateTex.colorSpace = THREE.SRGBColorSpace;
-  const plateMesh = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 0.34), new THREE.MeshStandardMaterial({ map: plateTex, roughness: 0.8 }));
-  plateMesh.position.set(0, 1.45, 2.08); model.add(plateMesh);
+  const plateMesh = new THREE.Mesh(new THREE.PlaneGeometry(0.7, 0.24), new THREE.MeshStandardMaterial({ map: plateTex, roughness: 0.8 }));
+  plateMesh.position.set(0, 0.58, 2.175); model.add(plateMesh);
+
+  // 後ろ旗：法被の色に金の縁取り、町名を縦書き。走ると後ろへなびく
+  const flagCv = document.createElement('canvas'); flagCv.width = 256; flagCv.height = 384;
+  const flagTex = new THREE.CanvasTexture(flagCv); flagTex.colorSpace = THREE.SRGBColorSpace; flagTex.anisotropy = 4;
+  const flagGeo = new THREE.PlaneGeometry(1.16, 1.7, 8, 12); flagGeo.translate(0, -0.85, 0);
+  const flagBase = flagGeo.attributes.position.array.slice();
+  const flag = new THREE.Mesh(flagGeo, new THREE.MeshStandardMaterial({ map: flagTex, side: THREE.DoubleSide, roughness: 0.75 }));
+  flag.castShadow = true;
+  const flagPivot = new THREE.Group(); flagPivot.position.set(0, 5.2, -2.36); flagPivot.rotation.y = Math.PI;
+  flagPivot.add(flag); model.add(flagPivot);
+  const hc = '#' + new THREE.Color(happi).getHexString();
   function setTown(name) {
     const g = plate.getContext('2d');
-    g.fillStyle = '#f4efe2'; g.fillRect(0, 0, 256, 96); g.strokeStyle = '#1b1b1b'; g.lineWidth = 6; g.strokeRect(4, 4, 248, 88);
-    g.fillStyle = '#141414'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = 'bold 56px "Hiragino Mincho ProN","Yu Mincho",serif';
-    g.fillText(name, 128, 52, 232); plateTex.needsUpdate = true;
+    g.fillStyle = '#f4efe2'; g.fillRect(0, 0, 256, 88); g.strokeStyle = '#1b1b1b'; g.lineWidth = 6; g.strokeRect(4, 4, 248, 80);
+    g.fillStyle = '#141414'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = 'bold 52px "Hiragino Mincho ProN","Yu Mincho",serif';
+    g.fillText(name, 128, 47, 232); plateTex.needsUpdate = true;
+    const f = flagCv.getContext('2d');
+    f.fillStyle = hc; f.fillRect(0, 0, 256, 384);
+    f.strokeStyle = '#d8ac4c'; f.lineWidth = 14; f.strokeRect(10, 10, 236, 350); f.lineWidth = 3; f.strokeRect(26, 26, 204, 318);
+    f.fillStyle = '#d8ac4c'; f.beginPath(); f.arc(128, 78, 34, 0, 7); f.fill();
+    f.fillStyle = hc; f.font = 'bold 40px "Hiragino Mincho ProN","Yu Mincho",serif'; f.textAlign = 'center'; f.textBaseline = 'middle'; f.fillText([...name][0] || '町', 128, 80);
+    const chars = [...name].slice(0, 5), size = Math.min(58, 220 / Math.max(1, chars.length));
+    f.fillStyle = '#f1d27a'; f.font = `bold ${size}px "Hiragino Mincho ProN","Yu Mincho",serif`;
+    chars.forEach((ch, i) => f.fillText(ch, 128, 140 + size * 0.55 + i * size * 1.02));
+    for (let x = 18; x < 240; x += 9) { f.fillStyle = '#d8ac4c'; f.fillRect(x, 360, 4, 24); }
+    flagTex.needsUpdate = true;
+  }
+  function updateFlag(t, v) {
+    const k = Math.min(1, v / 5), p = flagGeo.attributes.position.array;
+    flagPivot.rotation.x = 0.04 + k * 0.55 + Math.sin(t * 5.3) * 0.05 * k;
+    for (let i = 0; i < p.length; i += 3) { const x = flagBase[i], y = flagBase[i + 1]; p[i + 2] = Math.sin(x * 4 + y * 2.5 + t * 9) * 0.07 * (0.25 + k) * (-y / 1.7); }
+    flagGeo.attributes.position.needsUpdate = true; flagGeo.computeVertexNormals();
   }
 
+  // 大工方：大屋根（前）の前寄りと、小屋根（後ろ）に一人ずつ
   const d1 = makeDaiku(happi), d2 = makeDaiku(happi);
-  d1.group.position.set(0, 4.26, bz + 1.1); d1.base = d1.group.position.clone();
-  d2.group.position.set(0, 3.29, sz + 0.35); d2.base = d2.group.position.clone();
+  d1.group.position.set(0, 4.26, -bz + 1.0); d1.base = d1.group.position.clone();
+  d2.group.position.set(0, 3.29, -sz - 0.2); d2.base = d2.group.position.clone();
   model.add(d1.group, d2.group);
 
-  return { root, model, wheels, daiku: [d1, d2], crewRear, maeteko, setTown, ropeAnchors: [V(-0.52, 0.56, 2.2), V(0.52, 0.56, 2.2)] };
+  return { root, model, wheels, daiku: [d1, d2], crewRear, crewFront, maeteko, setTown, updateFlag, ropeAnchors: [V(-0.52, 0.56, 2.2), V(0.52, 0.56, 2.2)] };
 }

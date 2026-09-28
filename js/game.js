@@ -244,6 +244,8 @@ function updateVisuals(dt, t) {
   for (const w of dj.wheels) w.rotation.x += vf * dt / 0.33;
   dj.crewRear.position.y = Math.abs(Math.sin(t * 9)) * 0.05 * Math.min(1, v / 3);
   dj.crewRear.position.x = clamp(-st.w * 0.25, -0.3, 0.3);
+  dj.crewFront.position.y = Math.abs(Math.sin(t * 9 + 1.3)) * 0.035 * Math.min(1, v / 3);
+  dj.updateFlag(t, v);
   dj.maeteko.forEach((m, i) => { const a = st.mae[i]; m.pivot.rotation.x = 0.1 - a * 0.5; m.crew.position.x = -m.side * a * 0.25; m.crew.position.y = -a * 0.06; });
   const beat = audio.ctx ? (audio.ctx.currentTime / audio.interval) * Math.PI : t * 3;
   dj.daiku.forEach((d, i) => {
@@ -317,8 +319,10 @@ function updateVisuals(dt, t) {
 
 // ---------- カメラ ----------
 const cam = { dx: 0, dz: -1, pos: new THREE.Vector3(), look: new THREE.Vector3(), init: false };
+let camOverride = null; // 開発用：DJ_DEBUG.view() でカメラを固定
 const CAM_NAMES = ['追走', '大工方', '桟敷'];
 function updateCamera(dt, t) {
+  if (camOverride) { camOverride(camera, st, dj); return; }
   const f = fwd(st.h), v = Math.hypot(st.vx, st.vz);
   let dx = f.x, dz = f.z; if (v > 1.5) { dx = st.vx / v; dz = st.vz / v; }
   const k = 1 - Math.exp(-2.0 * dt);
@@ -328,7 +332,7 @@ function updateCamera(dt, t) {
     const a = t * 0.16; want.set(st.x + Math.cos(a) * 11, 3.6, st.z + Math.sin(a) * 11); look.set(st.x, 2.4, st.z);
     const p = pushCircle(want.x, want.z, 0.6); want.x = p.x; want.z = p.z;
   } else if (camMode === 1) {
-    dj.model.localToWorld(want.set(0, 6.3, 0.7)); look.set(want.x + f.x * 20, 3.2, want.z + f.z * 20); snap = true;
+    dj.model.localToWorld(want.set(0, 6.2, 1.3)); look.set(want.x + f.x * 20, 3.2, want.z + f.z * 20); snap = true;
   } else if (camMode === 2) {
     let best = null; for (const s of town.spots) { const d = Math.hypot(s.x - st.x, s.z - st.z); if (!best || d < best.d) best = { d, s }; }
     if (best.d < 80) { want.set(best.s.x, best.s.y, best.s.z); snap = true; }
@@ -507,6 +511,6 @@ async function boot() {
 boot().catch((e) => { $('loading').textContent = '読み込みに失敗しました：' + e.message; console.error(e); });
 
 window.DJ_DEBUG = {
-  get st() { return st; }, input, TUNE, get mode() { return mode; }, start, tap, jump, get segs() { return segs; }, COURSE, SEG,
+  view(fn) { camOverride = fn; }, get st() { return st; }, input, TUNE, get mode() { return mode; }, start, tap, jump, get segs() { return segs; }, COURSE, SEG,
   sim(sec, fn) { for (let i = 0; i < sec * 30; i++) { if (fn) fn(i / 30); advance(1 / 30, performance.now() / 1000 + i / 30); } renderer.render(scene, camera); },
 };
