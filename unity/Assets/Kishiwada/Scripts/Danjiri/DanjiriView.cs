@@ -46,10 +46,8 @@ namespace Kishiwada
         }
 
         // beat：鳴物の拍の位相（拍数）
-        public void Update(float dt, float t, double beat, float clock)
+        public void Update(float dt, float t, double beat, float clock, float speed)
         {
-            var rb = body.rb;
-            float speed = rb.linearVelocity.magnitude;
             // 車輪
             for (int i = 0; i < 4; i++) dm.wheels[i].localPosition = dm.wheelLocal[i];
             for (int i = 0; i < 4; i++) dm.wheels[i].localRotation = Quaternion.Euler(body.wheels[i].angle * Mathf.Rad2Deg, 0, 0);

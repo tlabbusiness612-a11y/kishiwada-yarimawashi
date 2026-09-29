@@ -96,6 +96,9 @@ namespace Kishiwada.EditorTools
 
         static void Build(BuildTarget target, string path)
         {
+            // 先に作業中の対象を切り替える（切り替えずに作ると URP の SSAO の資源が抜けて真っ暗になることがあった）
+            var group = BuildPipeline.GetBuildTargetGroup(target);
+            if (EditorUserBuildSettings.activeBuildTarget != target) EditorUserBuildSettings.SwitchActiveBuildTarget(group, target);
             var opts = new BuildPlayerOptions
             {
                 scenes = new[] { KishiwadaSetup.ScenePath },

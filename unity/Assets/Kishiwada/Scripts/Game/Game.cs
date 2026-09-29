@@ -21,7 +21,7 @@ namespace Kishiwada
         public bool forceMobile;
         [Tooltip("前梃子を入れる目安の案内を出す")] public bool guides = true;
 
-        enum Mode { Loading, Title, Count, Run, Finish, Result, Paused }
+        enum Mode { Loading, Title, Count, Run, Finish, Result, Paused, Replay }
         Mode mode = Mode.Loading, pausedFrom;
         float modeT;
         bool mobile;
@@ -40,7 +40,9 @@ namespace Kishiwada
         // 自動試験（コマンドライン）
         bool autoRun, autoQuit; string logPath, shotDir; StreamWriter log; float logT, dbgT;
         readonly List<(float t, int cam, bool done)> shots = new List<(float, int, bool)>();
-        float titleShotAt = -1f; string titleShotPath;
+        float titleShotAt = -1f; string titleShotPath; int titleCam = -1;
+        bool replayTest, replayDone; bool replayQuit => autoQuit && replayTest;
+        readonly List<(float t, bool done)> replayShots = new List<(float, bool)>();
 
         void Awake()
         {
@@ -64,6 +66,13 @@ namespace Kishiwada
                         }
                         break;
                     case "-kwTitleShot": titleShotPath = nx; titleShotAt = 6f; break;
+                    case "-kwTitleCam": titleCam = int.Parse(nx); break;
+                    case "-kwNoSteer": pilot.steer = false; break;
+                    case "-kwReplay": replayTest = true; break;
+                    case "-kwReplayShots":
+                        foreach (var part in (nx ?? "").Split(','))
+                            if (float.TryParse(part, NumberStyles.Float, CultureInfo.InvariantCulture, out float rt)) replayShots.Add((rt, false));
+                        break;
                 }
             }
             if (mobile && QualitySettings.names.Length > 0) QualitySettings.SetQualityLevel(0, true);
@@ -99,6 +108,7 @@ namespace Kishiwada
             hud.onStart = StartRun; hud.onAgain = StartRun; hud.onTitle = ToTitle;
             hud.onCamera = () => { camMode = (camMode + 1) % 4; camRig.mode = (CameraRig.Mode)camMode; camRig.Snap(); hud.SetCamera(CameraRig.Names[camMode]); };
             hud.onPause = Pause; hud.onResume = Resume;
+            hud.onReplay = StartReplay; hud.onSkipReplay = EndReplay;
             hud.SetLoading("町並みを組み立てています…");
             yield return null; yield return null;
 
@@ -186,7 +196,7 @@ namespace Kishiwada
             body.Place(KMath.X0Z(s0.a, 0.02f), s0.yaw);
             rope.Reset(body);
             tempo = 0f; combo = 0; clock = 0f; vRun = 0f;
-            sc.Reset();
+            sc.Reset(); replay.Clear(); dview.jumpAt = -9f;
             camRig.Snap();
             audio.ResetBeat();
         }
@@ -210,7 +220,7 @@ namespace Kishiwada
             Time.timeScale = 1f;
             ResetRun();
             mode = Mode.Title; modeT = 0f;
-            camRig.mode = CameraRig.Mode.Director; camRig.Snap();
+            camRig.mode = titleCam >= 0 ? (CameraRig.Mode)titleCam : CameraRig.Mode.Director; camRig.Snap();
             hud.ShowScreen("title");
             audio.playing = true; audio.master = 0.45f;
         }
@@ -226,7 +236,30 @@ namespace Kishiwada
             if (mode == Mode.Run) { sc.Hit(dv); hud.Bang(dv > 2.5f ? "ドーン！" : "ゴツン"); }
         }
 
-        bool Simulating => mode != Mode.Loading && mode != Mode.Paused;
+        bool Simulating => mode != Mode.Loading && mode != Mode.Paused && mode != Mode.Replay;
+
+        // ---------- リプレイ ----------
+        readonly Replay replay = new Replay();
+        float replayT, replayStart;
+        void StartReplay()
+        {
+            if (replay.Count < 30) return;
+            mode = Mode.Replay; modeT = 0f;
+            replayStart = replayT = replay.FirstHighlight();
+            body.rb.isKinematic = true;
+            camRig.mode = CameraRig.Mode.Replay; camRig.Snap();
+            hud.ShowScreen("replay");
+            audio.playing = true; audio.master = 0.85f;
+        }
+        void EndReplay()
+        {
+            if (mode != Mode.Replay) return;
+            body.rb.isKinematic = false;
+            mode = Mode.Result; modeT = 0f;
+            hud.ShowScreen("result");
+            audio.master = 0.5f;
+            if (replayQuit) Quit();
+        }
 
         void FixedUpdate()
         {
@@ -271,7 +304,12 @@ namespace Kishiwada
                     break;
                 case Mode.Result:
                     vRun = 0f;
-                    if (autoQuit && modeT > 2.5f) Quit();
+                    if (replayTest && modeT > 1f && replay.Count > 0 && !replayDone) { replayDone = true; StartReplay(); }
+                    else if (autoQuit && !replayTest && modeT > 2.5f) Quit();
+                    break;
+                case Mode.Replay:
+                    replayT += dt;
+                    if (input.confirm || input.tap || replayT > replay.End) EndReplay();
                     break;
             }
 
@@ -297,19 +335,29 @@ namespace Kishiwada
             body.rearTurn = control ? input.rear : 0f;
             body.brakeAll = mode == Mode.Finish && modeT > 0.6f || mode == Mode.Result ? 1f : 0f;
 
-            sc.Track(dt, body.PosXZ, body.Speed, body.Yaw, body.YawRate, running);
+            float speed = body.Speed; Vector3 vel = body.rb.linearVelocity;
+            if (mode == Mode.Replay)
+            {
+                replay.Apply(replayT, body, rope, out speed, out float rt, out float rj, out float rs, out vel);
+                tempo = rt; dview.jumpAt = rj; camRig.courseS = rs;
+            }
+            else
+            {
+                sc.Track(dt, body.PosXZ, body.Speed, body.Yaw, body.YawRate, running);
+                if (mode == Mode.Run || mode == Mode.Finish) replay.Record(clock, body, rope, tempo, dview.jumpAt, sc.s);
+            }
             if (running && guides) Guides();
 
             // 見た目
             double beat = audio.BeatNow;
-            dview.Update(dt, t, beat, clock);
+            dview.Update(dt, t, beat, clock, speed);
             crowd.Update(dt, t);
-            camRig.Update(Time.unscaledDeltaTime > 0 ? dt : 0f, t, body, dview, town);
-            spect.Update(body.rb.position, t, mode != Mode.Title || true, Mathf.Clamp01(body.Speed / 4f + (sc.cur != null ? 0.5f : 0f)));
+            camRig.Update(Time.unscaledDeltaTime > 0 ? dt : 0f, t, body, dview, town, vel);
+            spect.Update(body.rb.position, t, true, Mathf.Clamp01(speed / 4f + (sc.cur != null ? 0.5f : 0f)));
             env.Update(cam.transform.position, dt);
             // 音
             audio.tempo = tempo;
-            audio.speed = body.Speed;
+            audio.speed = speed;
             float slideMax = 0f; for (int i = 0; i < 4; i++) slideMax = Mathf.Max(slideMax, body.wheels[i].slide);
             audio.slide = slideMax * Mathf.Clamp01(body.Speed / 2f); audio.scrape = body.scrape;
             audio.excite = Mathf.Clamp01(body.Speed / 8.4f) * 0.6f + (sc.cur != null ? 0.4f : 0f);
@@ -321,6 +369,7 @@ namespace Kishiwada
                 hud.UpdateHud(townName, sc.score, sc.maxS, body.Speed, tempo, beat, body.maeL, body.maeR, body.rearTurn);
             if (mode == Mode.Title && titleShotAt > 0 && modeT > titleShotAt) { titleShotAt = -1; Shot(titleShotPath); StartCoroutine(QuitSoon(1.5f)); }
             Automation(dt, slideMax);
+            ReplayShots();
         }
 
         void Guides()
@@ -378,14 +427,25 @@ namespace Kishiwada
                 {
                     var s = shots[i];
                     if (s.done) continue;
-                    if (sc.time >= s.t - 0.6f && camRig.mode != (CameraRig.Mode)s.cam) { camRig.mode = (CameraRig.Mode)s.cam; camRig.Snap(); }
+                    if (sc.time >= s.t - 0.6f && camRig.mode != (CameraRig.Mode)s.cam) { camRig.mode = (CameraRig.Mode)s.cam; camRig.Snap(); hud.SetCamera(CameraRig.Names[Mathf.Clamp(s.cam, 0, 3)]); }
                     if (sc.time >= s.t)
                     {
                         Shot(System.IO.Path.Combine(shotDir ?? ".", $"shot_{s.t:000.0}_{CameraRig.Names[Mathf.Clamp(s.cam, 0, 3)]}.png"));
                         shots[i] = (s.t, s.cam, true);
-                        camRig.mode = CameraRig.Mode.Chase;
+                        camRig.mode = CameraRig.Mode.Chase; hud.SetCamera(CameraRig.Names[0]);
                     }
                 }
+        }
+        void ReplayShots()
+        {
+            if (mode != Mode.Replay) return;
+            for (int i = 0; i < replayShots.Count; i++)
+            {
+                var s = replayShots[i];
+                if (s.done || replayT - replayStart < s.t) continue;
+                Shot(System.IO.Path.Combine(shotDir ?? ".", $"replay_{s.t:000.0}.png"));
+                replayShots[i] = (s.t, true);
+            }
         }
         static void Shot(string path)
         {

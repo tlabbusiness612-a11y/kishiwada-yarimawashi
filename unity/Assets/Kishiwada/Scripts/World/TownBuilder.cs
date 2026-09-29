@@ -377,8 +377,9 @@ namespace Kishiwada
                     // 山は南東（内陸）側：+z が北なので南は -z
                     Vector3 dir = new Vector3(Mathf.Cos(a) * 0.9f + 0.1f, 0, -Mathf.Sin(a) * 0.9f - 0.35f).normalized;
                     Vector3 nrm = -dir;
-                    b.V(dir * R + Vector3.down * 5f, nrm, new Vector2(i, 0), Hex(0x8a9aa8));
-                    b.V(dir * R + Vector3.up * hh, nrm, new Vector2(i, 1), Hex(0x9fb0c0));
+                    // 日に照らされても白く飛ばないよう暗めに（霧で青くかすむ）
+                    b.V(dir * R + Vector3.down * 5f, nrm, new Vector2(i, 0), Hex(0x2a3440));
+                    b.V(dir * R + Vector3.up * hh, nrm, new Vector2(i, 1), Hex(0x3a4a5a));
                 }
                 for (int i = 0; i < N; i++) { int k = s + i * 2; b.TriFacing(k, k + 1, k + 3, b.nor[k]); b.TriFacing(k, k + 3, k + 2, b.nor[k]); }
             }

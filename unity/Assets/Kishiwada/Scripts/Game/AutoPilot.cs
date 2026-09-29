@@ -8,6 +8,7 @@ namespace Kishiwada
         public float targetTempo = 0.85f;
         public float aggression = 1f;   // 前梃子の効かせ方
         public bool jumpInCorners = true;
+        public bool steer = true;       // false：梃子を使わない（試験用）
         float tapCool;
         int hint = -1;
         float jumpCool;
@@ -28,7 +29,7 @@ namespace Kishiwada
             float err = KMath.WrapAngle(want - body.Yaw); // 正なら右へ
             float yr = body.YawRate;
             float cmd = Mathf.Clamp((-err * 2.6f + yr * 0.55f) * aggression, -1f, 1f); // 正で左へ
-            if (Mathf.Abs(cmd) < 0.08f) cmd = 0f;
+            if (Mathf.Abs(cmd) < 0.08f || !steer) cmd = 0f;
             inp.maeL = Mathf.Max(0f, cmd); inp.maeR = Mathf.Max(0f, -cmd);
             inp.rear = Mathf.Clamp(cmd * 0.9f, -1f, 1f); inp.rearManual = true;
             jumpCool -= dt;

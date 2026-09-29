@@ -5,7 +5,9 @@ namespace Kishiwada
     // カメラ：追走・大工方・桟敷・空撮、タイトルの周回、デモの自動切り替え
     public sealed class CameraRig
     {
-        public enum Mode { Chase = 0, Daiku = 1, Stand = 2, Aerial = 3, Orbit = 10, Director = 11 }
+        public enum Mode { Chase = 0, Daiku = 1, Stand = 2, Aerial = 3, Orbit = 10, Director = 11, Replay = 12 }
+        public float courseS;   // リプレイの画作り用：コース上の位置
+        Mode lastReplayShot = Mode.Orbit;
         public static readonly string[] Names = { "追走", "大工方", "桟敷", "空撮" };
         public Mode mode = Mode.Chase;
         public readonly Camera cam;
@@ -21,38 +23,48 @@ namespace Kishiwada
         public void Shake(float a) => shake = Mathf.Max(shake, a);
         public void Next() { mode = (Mode)(((int)mode + 1) % 4); init = false; }
 
-        public void Update(float dt, float time, DanjiriBody body, DanjiriView view, Town town)
+        public void Update(float dt, float time, DanjiriBody body, DanjiriView view, Town town, Vector3 vel)
         {
             var rb = body.rb;
             Vector3 p = rb.position, f = body.Forward; f.y = 0; f.Normalize();
-            Vector3 v = rb.linearVelocity; v.y = 0;
+            Vector3 v = vel; v.y = 0;
             float spd = v.magnitude;
             Vector3 d = spd > 1.5f ? v / spd : f;
             dir = Vector3.Slerp(dir, d, KMath.Damp(2f, dt)); dir.y = 0; dir.Normalize();
             Vector3 want, lookW; bool snap = false; float fov = fovBase;
             Mode m = mode;
+            bool firstPerson = m == Mode.Daiku;
+            if (view.daikuFront.smr.enabled == firstPerson) { view.daikuFront.smr.enabled = !firstPerson; view.daikuFront.prop.gameObject.SetActive(!firstPerson); }
             if (m == Mode.Director)
             {
                 directorT += dt;
                 if (directorT > 7f) { directorT = 0; directorShot = (directorShot + 1) % 4; init = false; }
                 m = directorShot switch { 0 => Mode.Chase, 1 => Mode.Aerial, 2 => Mode.Stand, _ => Mode.Orbit };
             }
+            else if (m == Mode.Replay)
+            {
+                // 直線は空から、角は桟敷から、路地は低い追走
+                float c0 = Course.Corners[0].s, c1 = Course.Corners[1].s, s = courseS;
+                m = Mathf.Abs(s - c0) <= 45f || Mathf.Abs(s - c1) <= 25f ? Mode.Stand : s > c0 && s < c1 ? Mode.Chase : Mode.Aerial;
+                if (m != lastReplayShot) { lastReplayShot = m; init = false; }
+            }
             switch (m)
             {
                 case Mode.Orbit:
                     {
                         float a = time * 0.16f;
-                        want = p + new Vector3(Mathf.Cos(a) * 11.5f, 3.8f, Mathf.Sin(a) * 11.5f);
-                        lookW = p + Vector3.up * 2.4f;
+                        want = p + new Vector3(Mathf.Cos(a) * 8.5f, 3.1f, Mathf.Sin(a) * 8.5f);
+                        lookW = p + Vector3.up * 2.2f;
                         want = Collide(p + Vector3.up * 2.4f, want);
                         break;
                     }
                 case Mode.Daiku:
                     {
+                        // 大工方の目から（本人の体は隠す）
                         var head = view.daikuFront.b[Bone.Head];
-                        want = head.position + Vector3.up * 0.25f - f * 0.35f;
+                        want = head.position + Vector3.up * 0.08f + f * 0.12f;
                         lookW = want + f * 20f + Vector3.down * 3.2f;
-                        snap = true; fov = 64f;
+                        snap = true; fov = 66f;
                         break;
                     }
                 case Mode.Stand:

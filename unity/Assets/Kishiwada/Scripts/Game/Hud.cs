@@ -102,6 +102,13 @@ namespace Kishiwada
             townField = new TextField { value = "わが町", maxLength = 8 };
             townField.style.fontSize = 30; townField.style.width = 360; townField.style.marginBottom = 18; townField.style.unityFontDefinition = FontDefinition.FromFont(mincho);
             panel.Add(townField);
+            // 入力欄：暗い地に白い字
+            var input = townField.Q(className: TextField.inputUssClassName);
+            if (input != null)
+            {
+                input.style.backgroundColor = C(0x2a2420, 0.95f); input.style.color = C(0xf6efe2);
+                Border(input, 2, C(0xc9bfae, 0.6f)); Round(input, 6); Pad(input, 6, 12);
+            }
             Text(panel, "法被の色", 20, false, 0xbfb5a3);
             var row = Box(panel); row.style.flexDirection = FlexDirection.Row; row.style.marginBottom = 26; row.pickingMode = PickingMode.Position;
             for (int i = 0; i < HAPPI.Length; i++)
@@ -251,6 +258,7 @@ namespace Kishiwada
             hud.style.display = which == "hud" ? DisplayStyle.Flex : DisplayStyle.None;
             result.style.display = which == "result" ? DisplayStyle.Flex : DisplayStyle.None;
             pause.style.display = which == "pause" ? DisplayStyle.Flex : DisplayStyle.None;
+            replay.style.display = which == "replay" ? DisplayStyle.Flex : DisplayStyle.None;
             if (which == "pause") hud.style.display = DisplayStyle.Flex;
         }
 
@@ -316,10 +324,19 @@ namespace Kishiwada
             resTotal = Text(tot, "0", 64, false, 0xffd98a);
             resBest = Text(card, "", 20, false, 0xbfb5a3); resBest.style.unityTextAlign = TextAnchor.MiddleRight;
             var btns = Box(card); btns.style.flexDirection = FlexDirection.Row; btns.style.justifyContent = Justify.FlexEnd; btns.style.marginTop = 16; btns.pickingMode = PickingMode.Position;
+            Btn(btns, "リプレイ", () => onReplay?.Invoke(), 0x2f5d8a, 24).style.marginRight = 14;
             Btn(btns, "もう一度", () => onAgain?.Invoke(), 0xc23a26, 28).style.marginRight = 14;
             Btn(btns, "タイトルへ", () => onTitle?.Invoke(), 0x3a342e, 24);
             result.style.display = DisplayStyle.None;
+            // リプレイ中の表示
+            replay = Box(root, "replay"); Fill(replay);
+            var tag = Text(replay, "リプレイ", 34, true, 0xffffff); Abs(tag, 36, 28);
+            tag.style.backgroundColor = C(0xc23a26, 0.85f); Pad(tag, 6, 18); Round(tag, 6);
+            var skip = Btn(replay, "とばす", () => onSkipReplay?.Invoke(), 0x2a2622, 22); Abs(skip, null, null, 36, 30);
+            replay.style.display = DisplayStyle.None;
         }
+        VisualElement replay;
+        public Action onReplay, onSkipReplay;
         public void ShowResult(Scoring sc, string town, int best, bool newBest)
         {
             resRows.Clear();
