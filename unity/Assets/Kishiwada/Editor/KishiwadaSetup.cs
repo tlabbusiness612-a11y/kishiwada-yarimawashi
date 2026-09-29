@@ -85,12 +85,20 @@ namespace Kishiwada.EditorTools
             Build(BuildTarget.StandaloneWindows64, "Build/Windows/KishiwadaYarimawashi.exe");
         }
 
-        // Xcode プロジェクトを書き出す（Mac の Xcode で iPhone に入れる）
+        [MenuItem("Kishiwada/ビルド/macOS")]
+        public static void BuildMac()
+        {
+            PlayerSettings.SetScriptingBackend(NamedBuildTarget.Standalone, ScriptingImplementation.Mono2x);
+            Build(BuildTarget.StandaloneOSX, "Build/macOS/KishiwadaYarimawashi.app");
+        }
+
+        // Xcode プロジェクトを書き出す（Mac の Xcode で iPhone に入れる）。署名は Xcode の自動署名に任せる
         [MenuItem("Kishiwada/ビルド/iOS（Xcode プロジェクト）")]
         public static void BuildIOS()
         {
             PlayerSettings.SetScriptingBackend(NamedBuildTarget.iOS, ScriptingImplementation.IL2CPP);
             PlayerSettings.iOS.targetOSVersionString = "15.0";
+            PlayerSettings.iOS.appleEnableAutomaticSigning = true;
             Build(BuildTarget.iOS, "Build/iOS");
         }
 

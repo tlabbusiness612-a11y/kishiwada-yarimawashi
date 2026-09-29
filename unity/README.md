@@ -10,6 +10,33 @@
 2. 初回だけ、メニューの **Kishiwada → セットアップ（材質の雛形とシーン）** を実行します。`Assets/Kishiwada/Scenes/Main.unity` ができます（リポジトリには作成済みのものが入っています）。
 3. `Main.unity` を開いて再生します。町並みや人は再生の開始時に組み立てるので、編集中のシーンには地車も町も見えません。
 
+### Mac で開く
+
+1. [Unity Hub](https://unity.com/download) を入れます。「Installs」からエディタ **6000.6.2f1** を入れ、次のモジュールも選びます。
+   - **Mac Build Support (Mono)**：Mac で遊ぶ版を作るため
+   - **iOS Build Support**：iPhone に入れるため
+2. App Store から **Xcode** を入れます（iPhone に入れる場合だけ必要です）。
+3. リポジトリを取ってきます。
+
+   ```bash
+   git clone https://github.com/tlabbusiness612-a11y/kishiwada-yarimawashi.git
+   cd kishiwada-yarimawashi
+   git checkout unity-port   # main に取り込むまでは Unity 版はこのブランチにあります
+   ```
+
+4. Unity Hub の「Add → Add project from disk」で、取ってきたフォルダの中の `unity/` を選びます（リポジトリ直下ではありません）。
+   - 初回は `Library/` の作成とパッケージの取得に数分かかります。
+   - 字は Mac のヒラギノで描くので、追加のフォントはいりません。
+
+### iPhone に入れる（Mac）
+
+1. Unity のメニュー **Kishiwada → ビルド → iOS（Xcode プロジェクト）** を選びます。`Build/iOS/` に Xcode プロジェクトができます。
+2. `Build/iOS/Unity-iPhone.xcodeproj` を Xcode で開きます。
+3. 左の一覧で `Unity-iPhone` を選び、「Signing & Capabilities」の **Team** に自分の Apple ID を選びます（無料の Apple ID でも 7 日間は動きます）。
+   - 「Bundle Identifier が使えない」と出たら、`com.tlab.kishiwadayarimawashi` の末尾を変えます。
+4. iPhone をケーブルでつなぎ、上の実行先で iPhone を選んで ▶ を押します。
+   - iPhone 側で「設定 → 一般 → VPN とデバイス管理」から開発元を信頼し、「デベロッパモード」を入れる必要があることがあります。
+
 ## 操作
 
 | 操作 | キーボード | ゲームパッド | iPhone |
@@ -56,6 +83,7 @@
 ## ビルド
 
 - **Windows**：メニュー **Kishiwada → ビルド → Windows** を選ぶと `Build/Windows/` に書き出します。
+- **macOS**：メニュー **Kishiwada → ビルド → macOS** を選ぶと `Build/macOS/KishiwadaYarimawashi.app` に書き出します（Mac Build Support が必要です）。
 - **iPhone**：メニュー **Kishiwada → ビルド → iOS（Xcode プロジェクト）** を選ぶと、`Build/iOS/` に Xcode プロジェクトを書き出します。
   - 実機に入れるには、Mac の Xcode でこのプロジェクトを開き、署名（Team）を設定して実行します。
   - iPhone では描画の品質設定が自動で `Mobile` になります。影は近くだけで解像度も下げ、曳き手は 1 点に 1 人、見物人の影なしで描きます。
